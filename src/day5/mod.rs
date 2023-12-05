@@ -1,7 +1,19 @@
 use std::fs;
-use std::collections::{ HashMap };
-use std::iter::zip;
+use std::collections::HashMap;
 
+fn print_vec(vector: &Vec<SourceDestinationRange>)  {
+    for elem in vector {
+        print!("{} | {} | {} \t", elem.source_range_start, elem.destination_range_start, elem.range_len);
+    }
+    println!(); // To start a new line after each row
+    println!("-----------");
+}
+
+struct SourceDestinationRange {
+    source_range_start: u32,
+    destination_range_start: u32,
+    range_len: u32
+}
 
 pub fn problem1(filename: &str) {
     let file_contents = fs::read_to_string(filename).expect("Error reading file");
@@ -19,7 +31,7 @@ pub fn problem1(filename: &str) {
     lines.next(); // Skip the empty line
 
     let mut source_destination_pairs: Vec<(&str, &str)> = vec![];
-    let mut source_destination_mapping: HashMap<&str, HashMap<u32, u32>> = HashMap::new();
+    let mut source_destination_mapping: HashMap<&str, Vec<SourceDestinationRange>> = HashMap::new();
     let mut source: Option<&str> = None;
     let mut destination: Option<&str> = None;
 
@@ -39,7 +51,7 @@ pub fn problem1(filename: &str) {
             destination = Some(split_line[1]);
 
             source_destination_pairs.push((source.unwrap(), destination.unwrap()));
-            source_destination_mapping.insert(source.unwrap(), HashMap::new());
+            source_destination_mapping.insert(source.unwrap(), vec![]);
 
             // Go to next line as we have extracted the source and destination
             continue;
@@ -54,32 +66,41 @@ pub fn problem1(filename: &str) {
         let source_range_start = source_to_destination_nums[1];
         let range_len = source_to_destination_nums[2];
 
-        for (k, v) in (source_range_start..(source_range_start+range_len)).zip((destination_range_start..(destination_range_start+range_len))) {
-            source_destination_mapping
-                .get_mut(source.unwrap())
-                .unwrap()
-                .insert(k, v);
-        }
+        source_destination_mapping
+            .get_mut(source.unwrap())
+            .unwrap()
+            .push(SourceDestinationRange { 
+                source_range_start: source_range_start,
+                destination_range_start: destination_range_start,
+                range_len: range_len
+            });
     }
 
     let mut min_location: u32 = u32::MAX;
     for seed in &seeds {
         print!("START");
 
-        let mut prev_value = seed;
+        let mut prev_value = *seed;
         for &(source, _destination) in &source_destination_pairs {
-            print!("-> {}: {} ", source, *prev_value);
-            let val = source_destination_mapping[source].get(prev_value);
+            print!("-> {}: {} ", source, prev_value);
 
-            match val {
-               Some(inner_val) => prev_value = inner_val,
-               None => {} 
+            // if source == "fertilizer" {
+            //     print_vec(&source_destination_mapping[source]);
+            // }
+
+            for SourceDestinationRange { source_range_start, destination_range_start, range_len } in &source_destination_mapping[source] {
+                if prev_value >= *source_range_start && prev_value < (*source_range_start + *range_len) {
+                    // if source == "fertilizer" {
+                    //     println!(" Picked ({},{},{})", source_range_start, destination_range_start, range_len);
+                    // }
+                    prev_value = *destination_range_start + (prev_value - *source_range_start);
+                    break;
+                }
             }
         }
 
         println!();
-
-        min_location = min_location.min(*prev_value);
+        min_location = min_location.min(prev_value);
     }
 
     println!("Min location: {}", min_location);
