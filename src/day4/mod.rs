@@ -94,7 +94,6 @@ pub fn problem2(filename: &str) {
 
     for (index, win_cnt) in winning_count.iter().enumerate() {
         if *win_cnt > 0 {
-
             for i in (index+1)..(index+(*win_cnt as usize)+1) {
                 total_cards[i] += total_cards[index];
             }
